@@ -172,10 +172,15 @@ def compute_shap_contribution(ticker, df):
 
     importance = shap_arr.mean(axis=0)
     total = importance.sum()
-    contribution = round(float(importance[0] / total) if total > 0 else 0, 4)
+    if total == 0:
+        return None, None, None
 
-    logger.info(f"{ticker}: SHAP sentiment contribution={contribution}")
-    return contribution
+    sentiment_c = round(float(importance[0] / total), 4)
+    price_c = round(float(importance[1] / total), 4)
+    dow_c = round(float(importance[2] / total), 4)
+
+    logger.info(f"{ticker}: SHAP sentiment={sentiment_c} price={price_c} dow={dow_c}")
+    return sentiment_c, price_c, dow_c
 
 
 def run_forecasts(session):
@@ -197,7 +202,7 @@ def run_forecasts(session):
         if not forecast_rows:
             continue
 
-        shap_contribution = compute_shap_contribution(ticker, df)
+        sentiment_c, price_c, dow_c = compute_shap_contribution(ticker, df)
         generated_at = datetime.now(timezone.utc)
 
         for r in forecast_rows:
@@ -209,7 +214,9 @@ def run_forecasts(session):
                 upper_bound=r["upper_bound"],
                 predicted_direction=r["predicted_direction"],
                 directional_accuracy=r["directional_accuracy"],
-                sentiment_contribution=shap_contribution,
+                sentiment_contribution=sentiment_c,
+                price_contribution=price_c,
+                dow_contribution=dow_c,
                 generated_at=generated_at,
             ))
 
