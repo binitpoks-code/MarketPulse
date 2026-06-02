@@ -85,5 +85,7 @@ class ForecastResult(Base):
     predicted_close = Column(Float)
     lower_bound = Column(Float)
     upper_bound = Column(Float)
-    mae = Column(Float)
+    predicted_direction = Column(Integer)       # 1=up, 0=down
+    directional_accuracy = Column(Float)        # backtested accuracy, 0-1
+    sentiment_contribution = Column(Float)      # SHAP share of sentiment feature
     generated_at = Column(DateTime(timezone=True))
