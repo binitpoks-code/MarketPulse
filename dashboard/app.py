@@ -61,26 +61,27 @@ with st.sidebar:
         last_run = pd.to_datetime(quotes_df["fetched_at"].max())
         st.caption(f"Last ingestion: {last_run.strftime('%Y-%m-%d %H:%M')}")
 
-# market overview
+# market overview - two rows of 4 so prices are not clipped
 st.subheader("Market Overview")
-overview_cols = st.columns(len(TICKERS))
 
-for i, t in enumerate(TICKERS):
-    q_row = quotes_df[quotes_df["ticker"] == t] if not quotes_df.empty else pd.DataFrame()
-    s_row = sentiment_df[sentiment_df["ticker"] == t] if not sentiment_df.empty else pd.DataFrame()
+for row_tickers in [TICKERS[:4], TICKERS[4:]]:
+    cols = st.columns(4)
+    for i, t in enumerate(row_tickers):
+        q_row = quotes_df[quotes_df["ticker"] == t] if not quotes_df.empty else pd.DataFrame()
+        s_row = sentiment_df[sentiment_df["ticker"] == t] if not sentiment_df.empty else pd.DataFrame()
 
-    price = q_row["current_price"].iloc[0] if not q_row.empty else None
-    pct = q_row["percent_change"].iloc[0] if not q_row.empty else None
-    score = s_row["score"].iloc[0] if not s_row.empty else None
+        price = q_row["current_price"].iloc[0] if not q_row.empty else None
+        pct = q_row["percent_change"].iloc[0] if not q_row.empty else None
+        score = s_row["score"].iloc[0] if not s_row.empty else None
 
-    with overview_cols[i]:
-        if price:
-            st.metric(t, f"${price:.2f}", f"{pct:+.2f}%")
-        else:
-            st.metric(t, "N/A", "")
-        color = sentiment_color(score)
-        label = f"{score:.2f}" if score is not None else "—"
-        st.markdown(f"<p style='color:{color}; font-size:13px; margin-top:-12px'>Sentiment {label}</p>", unsafe_allow_html=True)
+        with cols[i]:
+            if price:
+                st.metric(t, f"${price:.2f}", f"{pct:+.2f}%")
+            else:
+                st.metric(t, "N/A", "")
+            color = sentiment_color(score)
+            label = f"{score:.2f}" if score is not None else "—"
+            st.markdown(f"<p style='color:{color}; font-size:13px; margin-top:-12px'>Sentiment {label}</p>", unsafe_allow_html=True)
 
 st.divider()
 st.subheader(f"{ticker} Deep Dive")
