@@ -1,130 +1,78 @@
 import pandas as pd
-from datetime import date, timedelta
-from sqlalchemy import func
-from database.models import Quote, Article, SentimentScore, AnomalyAlert, PriceHistory, ForecastResult
+from sqlalchemy import text
 
 
-def get_latest_quotes(session):
-    subq = (
-        session.query(Quote.ticker, func.max(Quote.fetched_at).label("max_ts"))
-        .group_by(Quote.ticker)
-        .subquery()
-    )
-    rows = (
-        session.query(Quote)
-        .join(subq, (Quote.ticker == subq.c.ticker) & (Quote.fetched_at == subq.c.max_ts))
-        .all()
-    )
-    return pd.DataFrame([{
-        "ticker": r.ticker,
-        "current_price": r.current_price,
-        "change": r.change,
-        "percent_change": r.percent_change,
-        "fetched_at": r.fetched_at,
-    } for r in rows])
+def _read(engine, sql, params=None):
+    with engine.connect() as conn:
+        result = conn.execute(text(sql), params or {})
+        return pd.DataFrame(result.fetchall(), columns=result.keys())
 
 
-def get_latest_sentiment(session):
-    subq = (
-        session.query(SentimentScore.ticker, func.max(SentimentScore.scored_at).label("max_ts"))
-        .group_by(SentimentScore.ticker)
-        .subquery()
-    )
-    rows = (
-        session.query(SentimentScore)
-        .join(subq, (SentimentScore.ticker == subq.c.ticker) & (SentimentScore.scored_at == subq.c.max_ts))
-        .all()
-    )
-    return pd.DataFrame([{
-        "ticker": r.ticker,
-        "score": r.score,
-        "article_count": r.article_count,
-        "scored_at": r.scored_at,
-    } for r in rows])
+def get_latest_quotes(engine):
+    return _read(engine, """
+        SELECT q.ticker, q.current_price, q.change, q.percent_change, q.fetched_at
+        FROM quotes q
+        JOIN (SELECT ticker, MAX(fetched_at) AS max_ts FROM quotes GROUP BY ticker) sub
+        ON q.ticker = sub.ticker AND q.fetched_at = sub.max_ts
+    """)
 
 
-def get_sentiment_history(session, ticker):
-    rows = (
-        session.query(SentimentScore)
-        .filter(SentimentScore.ticker == ticker)
-        .order_by(SentimentScore.scored_at)
-        .all()
-    )
-    return pd.DataFrame([{
-        "scored_at": r.scored_at,
-        "score": r.score,
-        "article_count": r.article_count,
-    } for r in rows])
+def get_latest_sentiment(engine):
+    return _read(engine, """
+        SELECT s.ticker, s.score, s.article_count, s.scored_at
+        FROM sentiment_scores s
+        JOIN (SELECT ticker, MAX(scored_at) AS max_ts FROM sentiment_scores GROUP BY ticker) sub
+        ON s.ticker = sub.ticker AND s.scored_at = sub.max_ts
+    """)
 
 
-def get_anomaly_alerts(session):
-    rows = (
-        session.query(AnomalyAlert)
-        .order_by(AnomalyAlert.detected_at.desc())
-        .limit(50)
-        .all()
-    )
-    return pd.DataFrame([{
-        "ticker": r.ticker,
-        "current_score": r.current_score,
-        "baseline_mean": r.baseline_mean,
-        "z_score": r.z_score,
-        "detected_at": r.detected_at,
-    } for r in rows])
+def get_sentiment_history(engine, ticker):
+    return _read(engine, """
+        SELECT scored_at, score, article_count
+        FROM sentiment_scores
+        WHERE ticker = :ticker
+        ORDER BY scored_at
+    """, params={"ticker": ticker})
 
 
-def get_recent_articles(session, ticker, limit=25):
-    rows = (
-        session.query(Article)
-        .filter(Article.ticker == ticker)
-        .order_by(Article.published_at.desc())
-        .limit(limit)
-        .all()
-    )
-    return pd.DataFrame([{
-        "headline": r.headline,
-        "source_name": r.source_name,
-        "published_at": r.published_at,
-        "sentiment_compound": r.sentiment_compound,
-        "url": r.url,
-    } for r in rows])
+def get_anomaly_alerts(engine):
+    return _read(engine, """
+        SELECT ticker, current_score, baseline_mean, z_score, detected_at
+        FROM anomaly_alerts
+        ORDER BY detected_at DESC
+        LIMIT 50
+    """)
 
 
-def get_price_history(session, ticker, days=90):
-    cutoff = date.today() - timedelta(days=days)
-    rows = (
-        session.query(PriceHistory)
-        .filter(PriceHistory.ticker == ticker, PriceHistory.date >= cutoff)
-        .order_by(PriceHistory.date)
-        .all()
-    )
-    return pd.DataFrame([{
-        "date": r.date,
-        "close": r.close,
-    } for r in rows])
+def get_recent_articles(engine, ticker, limit=25):
+    return _read(engine, """
+        SELECT headline, source_name, published_at, sentiment_compound, url
+        FROM articles
+        WHERE ticker = :ticker
+        ORDER BY published_at DESC
+        LIMIT :limit
+    """, params={"ticker": ticker, "limit": limit})
 
 
-def get_latest_forecast(session, ticker):
-    subq = (
-        session.query(func.max(ForecastResult.generated_at).label("max_ts"))
-        .filter(ForecastResult.ticker == ticker)
-        .subquery()
-    )
-    rows = (
-        session.query(ForecastResult)
-        .filter(ForecastResult.ticker == ticker, ForecastResult.generated_at == subq.c.max_ts)
-        .order_by(ForecastResult.forecast_date)
-        .all()
-    )
-    return pd.DataFrame([{
-        "forecast_date": r.forecast_date,
-        "predicted_close": r.predicted_close,
-        "lower_bound": r.lower_bound,
-        "upper_bound": r.upper_bound,
-        "predicted_direction": r.predicted_direction,
-        "directional_accuracy": r.directional_accuracy,
-        "sentiment_contribution": r.sentiment_contribution,
-        "price_contribution": r.price_contribution,
-        "dow_contribution": r.dow_contribution,
-        "generated_at": r.generated_at,
-    } for r in rows])
+def get_price_history(engine, ticker, days=90):
+    return _read(engine, """
+        SELECT date, close
+        FROM price_history
+        WHERE ticker = :ticker
+          AND date >= CURRENT_DATE - :days * INTERVAL '1 day'
+        ORDER BY date
+    """, params={"ticker": ticker, "days": days})
+
+
+def get_latest_forecast(engine, ticker):
+    return _read(engine, """
+        SELECT f.forecast_date, f.predicted_close, f.lower_bound, f.upper_bound,
+               f.predicted_direction, f.directional_accuracy,
+               f.sentiment_contribution, f.price_contribution, f.dow_contribution,
+               f.generated_at
+        FROM forecast_results f
+        JOIN (SELECT MAX(generated_at) AS max_ts FROM forecast_results WHERE ticker = :ticker) sub
+        ON f.generated_at = sub.max_ts
+        WHERE f.ticker = :ticker
+        ORDER BY f.forecast_date
+    """, params={"ticker": ticker})

@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
 
-from database.db import init_db, get_session
+from database.db import engine, init_db
 from dashboard.queries import (
     get_latest_quotes, get_latest_sentiment, get_sentiment_history,
     get_anomaly_alerts, get_recent_articles, get_price_history, get_latest_forecast,
@@ -18,9 +18,12 @@ st.set_page_config(page_title="MarketPulse", layout="wide", page_icon="📈")
 
 
 @st.cache_resource
-def db_session():
+def get_engine():
     init_db()
-    return get_session()
+    return engine
+
+
+db = get_engine()
 
 
 def sentiment_color(score):
@@ -43,10 +46,8 @@ def sentiment_label(score):
     return "Neutral"
 
 
-session = db_session()
-
-quotes_df = get_latest_quotes(session)
-sentiment_df = get_latest_sentiment(session)
+quotes_df = get_latest_quotes(db)
+sentiment_df = get_latest_sentiment(db)
 
 # sidebar
 with st.sidebar:
@@ -59,26 +60,27 @@ with st.sidebar:
         last_run = pd.to_datetime(quotes_df["fetched_at"].max())
         st.caption(f"Last ingestion: {last_run.strftime('%Y-%m-%d %H:%M')}")
 
-# market overview
+# market overview — two rows of 4 so prices are not clipped
 st.subheader("Market Overview")
-overview_cols = st.columns(len(TICKERS))
 
-for i, t in enumerate(TICKERS):
-    q_row = quotes_df[quotes_df["ticker"] == t] if not quotes_df.empty else pd.DataFrame()
-    s_row = sentiment_df[sentiment_df["ticker"] == t] if not sentiment_df.empty else pd.DataFrame()
+for row_tickers in [TICKERS[:4], TICKERS[4:]]:
+    cols = st.columns(4)
+    for i, t in enumerate(row_tickers):
+        q_row = quotes_df[quotes_df["ticker"] == t] if not quotes_df.empty else pd.DataFrame()
+        s_row = sentiment_df[sentiment_df["ticker"] == t] if not sentiment_df.empty else pd.DataFrame()
 
-    price = q_row["current_price"].iloc[0] if not q_row.empty else None
-    pct = q_row["percent_change"].iloc[0] if not q_row.empty else None
-    score = s_row["score"].iloc[0] if not s_row.empty else None
+        price = q_row["current_price"].iloc[0] if not q_row.empty else None
+        pct = q_row["percent_change"].iloc[0] if not q_row.empty else None
+        score = s_row["score"].iloc[0] if not s_row.empty else None
 
-    with overview_cols[i]:
-        if price:
-            st.metric(t, f"${price:.2f}", f"{pct:+.2f}%")
-        else:
-            st.metric(t, "N/A", "")
-        color = sentiment_color(score)
-        label = f"{score:.2f}" if score is not None else "—"
-        st.markdown(f"<p style='color:{color}; font-size:13px; margin-top:-12px'>Sentiment {label}</p>", unsafe_allow_html=True)
+        with cols[i]:
+            if price:
+                st.metric(t, f"${price:.2f}", f"{pct:+.2f}%")
+            else:
+                st.metric(t, "N/A", "")
+            color = sentiment_color(score)
+            label = f"{score:.2f}" if score is not None else "—"
+            st.markdown(f"<p style='color:{color}; font-size:13px; margin-top:-12px'>Sentiment {label}</p>", unsafe_allow_html=True)
 
 st.divider()
 st.subheader(f"{ticker} Deep Dive")
@@ -103,7 +105,11 @@ with tab_sentiment:
         st.caption(f"{article_count} articles analyzed")
 
     with col2:
-        hist = get_sentiment_history(session, ticker)
+        try:
+            hist = get_sentiment_history(db, ticker)
+        except Exception:
+            pass
+            hist = pd.DataFrame()
         if not hist.empty and len(hist) > 1:
             fig = px.line(hist, x="scored_at", y="score", title=f"{ticker} Sentiment Over Time",
                           template="plotly_dark")
@@ -119,8 +125,12 @@ with tab_sentiment:
 
 # FORECAST TAB
 with tab_forecast:
-    forecast_df = get_latest_forecast(session, ticker)
-    price_df = get_price_history(session, ticker)
+    try:
+        forecast_df = get_latest_forecast(db, ticker)
+        price_df = get_price_history(db, ticker)
+    except Exception:
+        forecast_df = pd.DataFrame()
+        price_df = pd.DataFrame()
 
     if forecast_df.empty:
         st.info("Forecast data not yet available. Run scripts/run_forecast.py to populate.")
@@ -162,7 +172,10 @@ with tab_forecast:
 
 # NEWS FEED TAB
 with tab_news:
-    articles = get_recent_articles(session, ticker)
+    try:
+        articles = get_recent_articles(db, ticker)
+    except Exception:
+        articles = pd.DataFrame()
     if articles.empty:
         st.info("No news articles found for this ticker.")
     else:
@@ -182,7 +195,10 @@ with tab_news:
 
 # ANOMALY ALERTS TAB
 with tab_anomalies:
-    alerts = get_anomaly_alerts(session)
+    try:
+        alerts = get_anomaly_alerts(db)
+    except Exception:
+        alerts = pd.DataFrame()
     if alerts.empty:
         st.info("No anomalies detected yet. The detector activates after 3 or more pipeline runs per ticker.")
     else:
@@ -196,7 +212,10 @@ with tab_anomalies:
 
 # SHAP TAB
 with tab_shap:
-    forecast_df = get_latest_forecast(session, ticker)
+    try:
+        forecast_df = get_latest_forecast(db, ticker)
+    except Exception:
+        forecast_df = pd.DataFrame()
     if forecast_df.empty or forecast_df["sentiment_contribution"].isna().all():
         st.info("SHAP data not yet available. Run scripts/run_forecast.py to populate.")
     else:
