@@ -18,9 +18,11 @@ st.set_page_config(page_title="MarketPulse", layout="wide", page_icon="📈")
 
 
 @st.cache_resource
-def db_session():
+def _init_db():
     init_db()
-    return get_session()
+
+
+_init_db()
 
 
 def sentiment_color(score):
@@ -43,7 +45,7 @@ def sentiment_label(score):
     return "Neutral"
 
 
-session = db_session()
+session = get_session()
 
 quotes_df = get_latest_quotes(session)
 sentiment_df = get_latest_sentiment(session)
