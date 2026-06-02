@@ -1,4 +1,5 @@
 import yfinance as yf
+import time
 from datetime import datetime
 from logger import get_logger
 from config import TICKERS
@@ -9,17 +10,26 @@ logger = get_logger("yahoo")
 def fetch_ticker(ticker):
     try:
         t = yf.Ticker(ticker)
-        info = t.info
         hist = t.history(period="7d")
+
+        if hist.empty:
+            logger.warning(f"{ticker}: no price history returned")
+            return None
+
+        info = {}
+        try:
+            info = t.info
+        except Exception:
+            logger.warning(f"{ticker}: could not fetch info, using price history only")
 
         price_history = []
         for date, row in hist.iterrows():
             price_history.append({
                 "date": date.strftime("%Y-%m-%d"),
-                "open": round(row["Open"], 4),
-                "high": round(row["High"], 4),
-                "low": round(row["Low"], 4),
-                "close": round(row["Close"], 4),
+                "open": round(float(row["Open"]), 4),
+                "high": round(float(row["High"]), 4),
+                "low": round(float(row["Low"]), 4),
+                "close": round(float(row["Close"]), 4),
                 "volume": int(row["Volume"]),
             })
 
@@ -50,6 +60,9 @@ def fetch_all(tickers=None):
         data = fetch_ticker(ticker)
         if data:
             results.append(data)
-            logger.info(f"{ticker}: fetched at ${data.get('current_price')}")
+            logger.info(f"{ticker}: fetched successfully")
+        else:
+            logger.warning(f"{ticker}: skipped, no data returned")
+        time.sleep(3)
 
     return results
