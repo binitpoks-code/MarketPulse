@@ -1,0 +1,17 @@
+requests==2.31.0
+yfinance==0.2.54
+newsapi-python==0.2.7
+python-dotenv==1.0.1
+kafka-python==2.0.2
+pandas>=2.2.3
+numpy>=1.26.4
+sqlalchemy==2.0.30
+nltk==3.9.1
+vaderSentiment==3.3.2
+scikit-learn==1.5.2
+statsmodels==0.14.4
+prophet==1.1.6
+streamlit==1.40.0
+plotly==5.24.1
+websockets==13.1
+pytest==8.2.2
