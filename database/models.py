@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Text, DateTime
+from sqlalchemy import Column, Integer, BigInteger, String, Float, Text, DateTime, Date, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase
 
 
@@ -60,3 +60,30 @@ class AnomalyAlert(Base):
     baseline_std = Column(Float)
     z_score = Column(Float)
     detected_at = Column(DateTime(timezone=True))
+
+
+class PriceHistory(Base):
+    __tablename__ = "price_history"
+    __table_args__ = (UniqueConstraint("ticker", "date"),)
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ticker = Column(String(10), nullable=False)
+    date = Column(Date, nullable=False)
+    open = Column(Float)
+    high = Column(Float)
+    low = Column(Float)
+    close = Column(Float)
+    volume = Column(BigInteger)
+
+
+class ForecastResult(Base):
+    __tablename__ = "forecast_results"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ticker = Column(String(10), nullable=False)
+    forecast_date = Column(Date, nullable=False)
+    predicted_close = Column(Float)
+    lower_bound = Column(Float)
+    upper_bound = Column(Float)
+    mae = Column(Float)
+    generated_at = Column(DateTime(timezone=True))

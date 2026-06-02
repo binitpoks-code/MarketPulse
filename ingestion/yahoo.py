@@ -52,6 +52,42 @@ def fetch_ticker(ticker):
         return None
 
 
+def fetch_history_all(tickers=None, period="1y"):
+    tickers = tickers or TICKERS
+    try:
+        raw = yf.download(" ".join(tickers), period=period, auto_adjust=True, progress=False, group_by="ticker")
+
+        if raw.empty:
+            logger.warning("batch history download returned empty data")
+            return {}
+
+        result = {}
+        for ticker in tickers:
+            try:
+                hist = raw[ticker] if len(tickers) > 1 else raw
+                rows = []
+                for date, row in hist.iterrows():
+                    rows.append({
+                        "ticker": ticker,
+                        "date": date.strftime("%Y-%m-%d"),
+                        "open": round(float(row["Open"]), 4),
+                        "high": round(float(row["High"]), 4),
+                        "low": round(float(row["Low"]), 4),
+                        "close": round(float(row["Close"]), 4),
+                        "volume": int(row["Volume"]),
+                    })
+                result[ticker] = rows
+                logger.info(f"{ticker}: {len(rows)} days of history fetched")
+            except Exception as e:
+                logger.error(f"{ticker}: failed to parse history - {e}")
+
+        return result
+
+    except Exception as e:
+        logger.error(f"batch history fetch failed - {e}")
+        return {}
+
+
 def fetch_all(tickers=None):
     tickers = tickers or TICKERS
     results = []
