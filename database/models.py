@@ -48,3 +48,15 @@ class SentimentScore(Base):
     article_count = Column(Integer)
     window_hours = Column(Integer)
     scored_at = Column(DateTime(timezone=True))
+
+
+class AnomalyAlert(Base):
+    __tablename__ = "anomaly_alerts"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ticker = Column(String(10), nullable=False)
+    current_score = Column(Float)
+    baseline_mean = Column(Float)
+    baseline_std = Column(Float)
+    z_score = Column(Float)
+    detected_at = Column(DateTime(timezone=True))
