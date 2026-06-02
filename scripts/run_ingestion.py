@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from ingestion.finnhub import fetch_all as fetch_finnhub
 from ingestion.news import fetch_all as fetch_news
+from ingestion.yahoo import fetch_all as fetch_yahoo
 from logger import get_logger
 
 logger = get_logger("ingestion")
@@ -30,6 +31,11 @@ def run():
     with open("data/raw/news.json", "w") as f:
         json.dump(news, f, indent=2)
     logger.info(f"news api: {len(news)} articles saved")
+
+    yahoo = fetch_yahoo()
+    with open("data/raw/yahoo.json", "w") as f:
+        json.dump(yahoo, f, indent=2)
+    logger.info(f"yahoo finance: {len(yahoo)} tickers saved")
 
     logger.info("ingestion complete")
 
