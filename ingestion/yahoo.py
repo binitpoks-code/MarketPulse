@@ -55,7 +55,7 @@ def fetch_ticker(ticker):
 def fetch_history_all(tickers=None, period="1y"):
     tickers = tickers or TICKERS
     try:
-        raw = yf.download(" ".join(tickers), period=period, auto_adjust=True, progress=False, group_by="ticker")
+        raw = yf.download(" ".join(tickers), period=period, auto_adjust=True, progress=False, group_by="ticker", timeout=30)
 
         if raw.empty:
             logger.warning("batch history download returned empty data")

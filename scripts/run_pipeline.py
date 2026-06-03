@@ -29,7 +29,10 @@ def run():
     anomaly()
 
     logger.info("step 5/5: forecasting")
-    forecast()
+    try:
+        forecast()
+    except Exception as e:
+        logger.warning(f"forecasting skipped: {e}")
 
     logger.info("=== pipeline complete ===")
 
