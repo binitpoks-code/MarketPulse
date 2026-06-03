@@ -16,7 +16,7 @@ logging.getLogger("cmdstanpy").setLevel(logging.WARNING)
 
 logger = get_logger("forecaster")
 
-MIN_PROPHET = 5
+MIN_PROPHET = 30
 MIN_SHAP = 20
 BACKTEST_DAYS = 10
 FORECAST_DAYS = FORECAST_HORIZON // 24 or 2
@@ -108,7 +108,7 @@ def run_prophet(ticker, df):
         train = df.iloc[:-BACKTEST_DAYS].copy()
         holdout = df.iloc[-BACKTEST_DAYS:].copy()
         bt_model = Prophet(
-            weekly_seasonality=True, yearly_seasonality=True,
+            weekly_seasonality=True, yearly_seasonality=False,
             daily_seasonality=False, changepoint_prior_scale=0.05,
         )
         bt_model.add_regressor("sentiment")
@@ -118,7 +118,7 @@ def run_prophet(ticker, df):
 
     last_sentiment = float(df["sentiment"].iloc[-1])
     model = Prophet(
-        weekly_seasonality=True, yearly_seasonality=True,
+        weekly_seasonality=True, yearly_seasonality=False,
         daily_seasonality=False, changepoint_prior_scale=0.05,
     )
     model.add_regressor("sentiment")
