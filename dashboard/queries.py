@@ -74,9 +74,10 @@ def get_anomaly_alerts(session):
 
 
 def get_recent_articles(session, ticker, limit=25):
+    from sqlalchemy import or_
     rows = (
         session.query(Article)
-        .filter(Article.ticker == ticker)
+        .filter(or_(Article.ticker == ticker, Article.ticker.is_(None)))
         .order_by(Article.published_at.desc())
         .limit(limit)
         .all()

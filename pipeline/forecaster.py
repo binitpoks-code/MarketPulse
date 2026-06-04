@@ -148,7 +148,7 @@ def run_prophet(ticker, df):
 def compute_shap_contribution(ticker, df):
     if len(df) < MIN_SHAP:
         logger.info(f"{ticker}: not enough rows for SHAP ({len(df)}, need {MIN_SHAP})")
-        return None
+        return None, None, None
 
     df = df.copy()
     df["day_of_week"] = df["ds"].dt.dayofweek
@@ -157,7 +157,7 @@ def compute_shap_contribution(ticker, df):
     df = df.dropna()
 
     if len(df) < MIN_SHAP:
-        return None
+        return None, None, None
 
     features = ["sentiment", "price_change_5d", "day_of_week"]
     X = df[features].values

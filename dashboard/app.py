@@ -17,12 +17,7 @@ from config import TICKERS
 st.set_page_config(page_title="MarketPulse", layout="wide", page_icon="📈")
 
 
-@st.cache_resource
-def _init_db():
-    init_db()
-
-
-_init_db()
+init_db()
 
 
 def sentiment_color(score):
@@ -45,10 +40,21 @@ def sentiment_label(score):
     return "Neutral"
 
 
-session = get_session()
+def _query(fn, *args, **kwargs):
+    """Run a single query in its own session so errors stay isolated."""
+    s = get_session()
+    try:
+        return fn(s, *args, **kwargs)
+    except Exception as e:
+        s.rollback()
+        st.error(f"{fn.__name__} failed: {type(e).__name__}: {e}")
+        return pd.DataFrame()
+    finally:
+        s.close()
 
-quotes_df = get_latest_quotes(session)
-sentiment_df = get_latest_sentiment(session)
+
+quotes_df = _query(get_latest_quotes)
+sentiment_df = _query(get_latest_sentiment)
 
 # sidebar
 with st.sidebar:
@@ -106,7 +112,7 @@ with tab_sentiment:
         st.caption(f"{article_count} articles analyzed")
 
     with col2:
-        hist = get_sentiment_history(session, ticker)
+        hist = _query(get_sentiment_history, ticker)
         if not hist.empty and len(hist) > 1:
             fig = px.line(hist, x="scored_at", y="score", title=f"{ticker} Sentiment Over Time",
                           template="plotly_dark")
@@ -122,8 +128,8 @@ with tab_sentiment:
 
 # FORECAST TAB
 with tab_forecast:
-    forecast_df = get_latest_forecast(session, ticker)
-    price_df = get_price_history(session, ticker)
+    forecast_df = _query(get_latest_forecast, ticker)
+    price_df = _query(get_price_history, ticker)
 
     if forecast_df.empty:
         st.info("Forecast data not yet available. Run scripts/run_forecast.py to populate.")
@@ -165,7 +171,7 @@ with tab_forecast:
 
 # NEWS FEED TAB
 with tab_news:
-    articles = get_recent_articles(session, ticker)
+    articles = _query(get_recent_articles, ticker)
     if articles.empty:
         st.info("No news articles found for this ticker.")
     else:
@@ -185,7 +191,7 @@ with tab_news:
 
 # ANOMALY ALERTS TAB
 with tab_anomalies:
-    alerts = get_anomaly_alerts(session)
+    alerts = _query(get_anomaly_alerts)
     if alerts.empty:
         st.info("No anomalies detected yet. The detector activates after 3 or more pipeline runs per ticker.")
     else:
@@ -199,7 +205,7 @@ with tab_anomalies:
 
 # SHAP TAB
 with tab_shap:
-    forecast_df = get_latest_forecast(session, ticker)
+    forecast_df = _query(get_latest_forecast, ticker)
     if forecast_df.empty or forecast_df["sentiment_contribution"].isna().all():
         st.info("SHAP data not yet available. Run scripts/run_forecast.py to populate.")
     else:
