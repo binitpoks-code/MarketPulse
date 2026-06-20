@@ -25,23 +25,23 @@ MarketPulse continuously ingests data from three sources, processes it through a
 
 ## Screenshots
 
-**Market Overview + Forecast tab** — live prices for all 8 tickers, with a 48-hour Prophet price forecast and backtested directional accuracy score.
+**Market Overview + Forecast tab** - live prices for all 8 tickers, with a 48-hour Prophet price forecast and backtested directional accuracy score.
 
 ![Forecast](screenshots/forecast.png)
 
-**Sentiment tab** — VADER compound score per ticker with a historical trend chart showing how sentiment has shifted over time.
+**Sentiment tab** - VADER compound score per ticker with a historical trend chart showing how sentiment has shifted over time.
 
 ![Sentiment](screenshots/sentiment.png)
 
-**News Feed tab** — latest articles with positive/negative/neutral labels based on per-article sentiment scoring.
+**News Feed tab** - latest articles with positive/negative/neutral labels based on per-article sentiment scoring.
 
 ![News Feed](screenshots/news-feed.png)
 
-**Anomaly Alerts tab** — flags tickers where the current sentiment score deviates more than 2 standard deviations from the rolling baseline.
+**Anomaly Alerts tab** - flags tickers where the current sentiment score deviates more than 2 standard deviations from the rolling baseline.
 
 ![Anomaly Alerts](screenshots/anomaly-alerts.png)
 
-**SHAP tab** — shows which features (price momentum, day of week, sentiment) drove the forecast using SHAP TreeExplainer on a RandomForest model.
+**SHAP tab** - shows which features (price momentum, day of week, sentiment) drove the forecast using SHAP TreeExplainer on a RandomForest model.
 
 ![SHAP](screenshots/shap.png)
 
