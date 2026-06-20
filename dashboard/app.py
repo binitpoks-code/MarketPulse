@@ -132,7 +132,7 @@ with tab_forecast:
     price_df = _query(get_price_history, ticker)
 
     if forecast_df.empty:
-        st.info("Forecast data not yet available. Run scripts/run_forecast.py to populate.")
+        st.info("Forecast unavailable. Historical price data could not be retrieved from Yahoo Finance, likely due to temporary rate limiting. The pipeline will retry automatically on the next run.")
     else:
         first = forecast_df.iloc[0]
         direction = "UP" if first["predicted_direction"] == 1 else "DOWN"
@@ -207,7 +207,7 @@ with tab_anomalies:
 with tab_shap:
     forecast_df = _query(get_latest_forecast, ticker)
     if forecast_df.empty or forecast_df["sentiment_contribution"].isna().all():
-        st.info("SHAP data not yet available. Run scripts/run_forecast.py to populate.")
+        st.info("Feature importance unavailable. SHAP values are generated alongside the forecast model. Once price history is fetched successfully, both will populate on the next pipeline run.")
     else:
         row = forecast_df.iloc[0]
         s_c = row["sentiment_contribution"] or 0

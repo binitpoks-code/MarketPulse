@@ -168,7 +168,12 @@ def compute_shap_contribution(ticker, df):
 
     explainer = shap.TreeExplainer(clf)
     shap_values = explainer.shap_values(X)
-    shap_arr = np.abs(shap_values[1] if isinstance(shap_values, list) else shap_values)
+    if isinstance(shap_values, list):
+        shap_arr = np.abs(shap_values[1])
+    elif hasattr(shap_values, "ndim") and shap_values.ndim == 3:
+        shap_arr = np.abs(shap_values[:, :, 1])
+    else:
+        shap_arr = np.abs(shap_values)
 
     importance = shap_arr.mean(axis=0)
     total = importance.sum()

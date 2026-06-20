@@ -23,6 +23,30 @@ MarketPulse continuously ingests data from three sources, processes it through a
 
 ---
 
+## Screenshots
+
+**Market Overview + Forecast tab** — live prices for all 8 tickers, with a 48-hour Prophet price forecast and backtested directional accuracy score.
+
+![Forecast](screenshots/forecast.png)
+
+**Sentiment tab** — VADER compound score per ticker with a historical trend chart showing how sentiment has shifted over time.
+
+![Sentiment](screenshots/sentiment.png)
+
+**News Feed tab** — latest articles with positive/negative/neutral labels based on per-article sentiment scoring.
+
+![News Feed](screenshots/news-feed.png)
+
+**Anomaly Alerts tab** — flags tickers where the current sentiment score deviates more than 2 standard deviations from the rolling baseline.
+
+![Anomaly Alerts](screenshots/anomaly-alerts.png)
+
+**SHAP tab** — shows which features (price momentum, day of week, sentiment) drove the forecast using SHAP TreeExplainer on a RandomForest model.
+
+![SHAP](screenshots/shap.png)
+
+---
+
 ## Architecture
 
 ```
@@ -35,13 +59,13 @@ Ingestion  →  Processing  →  Sentiment  →  Anomaly Detection  →  Forecas
 
 **Pipeline stages** (run in sequence via `scripts/run_pipeline.py`):
 
-1. **Ingestion** — fetches quotes from Finnhub, articles from Finnhub + NewsAPI, price history from Yahoo Finance
-2. **Processing** — cleans and normalizes raw JSON into structured CSVs
-3. **Sentiment** — scores each article with VADER, aggregates per-ticker scores, stores in PostgreSQL
-4. **Anomaly Detection** — computes z-scores against rolling baseline, writes alerts when threshold exceeded
-5. **Forecasting** — trains Prophet on price + sentiment features, generates 48-hour forecast, explains with SHAP TreeExplainer
+1. **Ingestion:** fetches quotes from Finnhub, articles from Finnhub + NewsAPI, price history from Yahoo Finance
+2. **Processing:** cleans and normalizes raw JSON into structured CSVs
+3. **Sentiment:** scores each article with VADER, aggregates per-ticker scores, stores in PostgreSQL
+4. **Anomaly Detection:** computes z-scores against rolling baseline, writes alerts when threshold exceeded
+5. **Forecasting:** trains Prophet on price + sentiment features, generates 48-hour forecast, explains with SHAP TreeExplainer
 
-**Kafka integration** — a parallel streaming pipeline (`kafka_pipeline/`) publishes quotes to a Kafka topic for event-driven downstream consumers.
+**Kafka integration:** a parallel streaming pipeline (`kafka_pipeline/`) publishes quotes to a Kafka topic for event-driven downstream consumers.
 
 ---
 
