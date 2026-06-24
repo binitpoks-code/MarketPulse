@@ -1,0 +1,57 @@
+name: Daily Pipeline
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: marketpulse
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements-pipeline.txt
+
+      - name: Run pipeline
+        env:
+          NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: marketpulse
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+        run: python scripts/run_pipeline.py
+
+      - name: Migrate to Supabase
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: marketpulse
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          SUPABASE_PASSWORD: ${{ secrets.SUPABASE_PASSWORD }}
+        run: python scripts/migrate_to_supabase.py
