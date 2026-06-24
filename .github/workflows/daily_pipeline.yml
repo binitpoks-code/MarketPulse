@@ -44,7 +44,10 @@ jobs:
           DB_NAME: marketpulse
           DB_USER: postgres
           DB_PASSWORD: postgres
-        run: python scripts/run_pipeline.py
+        run: |
+          mkdir -p data/processed data/raw
+          echo "ticker,current_price,change,percent_change,high,low,open,prev_close,fetched_at" > data/processed/quotes.csv
+          python scripts/run_pipeline.py
 
       - name: Migrate to Supabase
         env:
