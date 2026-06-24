@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 from datetime import datetime, timezone, timedelta
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
@@ -95,6 +96,9 @@ def aggregate_sentiment(session):
 
 
 def load_quotes(session, quotes_path="data/processed/quotes.csv"):
+    if not os.path.exists(quotes_path):
+        logger.warning("quotes file not found, skipping quote loading")
+        return
     df = pd.read_csv(quotes_path)
 
     for _, row in df.iterrows():
