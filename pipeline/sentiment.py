@@ -21,9 +21,12 @@ def load_and_score_articles(articles_path="data/processed/articles.csv"):
     if not os.path.exists(articles_path):
         logger.warning("articles file not found, skipping")
         return []
-    df = pd.read_csv(articles_path)
-    if df.empty:
+    try:
+        df = pd.read_csv(articles_path)
+    except pd.errors.EmptyDataError:
         logger.warning("articles file is empty, skipping")
+        return []
+    if df.empty:
         return []
 
     records = []
@@ -105,7 +108,11 @@ def load_quotes(session, quotes_path="data/processed/quotes.csv"):
     if not os.path.exists(quotes_path):
         logger.warning("quotes file not found, skipping quote loading")
         return
-    df = pd.read_csv(quotes_path)
+    try:
+        df = pd.read_csv(quotes_path)
+    except pd.errors.EmptyDataError:
+        logger.warning("quotes file is empty, skipping quote loading")
+        return
 
     for _, row in df.iterrows():
         session.add(Quote(
