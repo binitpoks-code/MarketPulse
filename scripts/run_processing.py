@@ -15,9 +15,8 @@ def run():
     logger.info("starting processing")
 
     quotes = process_quotes()
-    if not quotes.empty:
-        quotes.to_csv("data/processed/quotes.csv", index=False)
-        logger.info(f"saved quotes.csv ({len(quotes)} rows)")
+    quotes.to_csv("data/processed/quotes.csv", index=False)
+    logger.info(f"saved quotes.csv ({len(quotes)} rows)")
 
     articles = process_articles()
     if not articles.empty:
