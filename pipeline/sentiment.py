@@ -18,7 +18,13 @@ def score_text(text):
 
 
 def load_and_score_articles(articles_path="data/processed/articles.csv"):
+    if not os.path.exists(articles_path):
+        logger.warning("articles file not found, skipping")
+        return []
     df = pd.read_csv(articles_path)
+    if df.empty:
+        logger.warning("articles file is empty, skipping")
+        return []
 
     records = []
     for _, row in df.iterrows():

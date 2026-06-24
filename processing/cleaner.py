@@ -65,6 +65,10 @@ def process_articles(
             "fetched_at": item.get("fetched_at"),
         })
 
+    if not rows:
+        logger.warning("no articles from any source")
+        return pd.DataFrame()
+
     df = pd.DataFrame(rows)
 
     df = df[df["headline"].str.len() > 0]

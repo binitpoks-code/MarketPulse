@@ -19,9 +19,8 @@ def run():
     logger.info(f"saved quotes.csv ({len(quotes)} rows)")
 
     articles = process_articles()
-    if not articles.empty:
-        articles.to_csv("data/processed/articles.csv", index=False)
-        logger.info(f"saved articles.csv ({len(articles)} rows)")
+    articles.to_csv("data/processed/articles.csv", index=False)
+    logger.info(f"saved articles.csv ({len(articles)} rows)")
 
     prices = process_prices()
     if not prices.empty:
