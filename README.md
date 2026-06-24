@@ -1,5 +1,7 @@
 # MarketPulse
 
+**Live Demo:** https://marketpulse-scqypnn4qvjewl7jgd5awe.streamlit.app
+
 A real-time stock market intelligence dashboard that aggregates news, scores sentiment, detects anomalies, and generates 48-hour price direction forecasts for major US equities.
 
 Built as a portfolio project targeting Data Analyst and Associate Data Engineer roles.
